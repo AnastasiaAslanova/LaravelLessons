@@ -16,3 +16,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::get('/currency', function () {
+   return  Http::get ('https://api.privatbank.ua/p24api/pubinfo?json&exchange&coursid=5');
+});
+
