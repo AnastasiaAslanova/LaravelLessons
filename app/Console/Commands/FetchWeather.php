@@ -9,12 +9,13 @@ use Illuminate\Http\Client\Factory;
 
 class FetchWeather extends Command
 {
+    private const DEFAULT_PRECISION = 1;
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'weather:fetch {city}';
+    protected $signature = 'weather:fetch {cities*}';
 
     /**
      * The console command description.
@@ -42,18 +43,35 @@ class FetchWeather extends Command
         $weatherConf = $config->get('weather');
         $params = [
             'appid' => $weatherConf['api_key'],
-            'q' => $this->argument('city'),
+            'q' =>'' ,
             'units' => 'metric'
         ];
-        $params = http_build_query($params);
+
         try {
-            $response = $http->get("https://api.openweathermap.org/data/2.5/weather?$params");
-            $json = $response->json();
-            $date = date('d.m.Y H:i:s') . ' UTC';
-            $this->info("Погода в городе {$this->argument('city')} ($date):".PHP_EOL."Температура: {$json['main']['temp']} C");
+            $dataByCities = [];
+            foreach ($this->argument('cities') as $city) {
+                $params['q'] = $city;
+                $query = http_build_query($params);
+                $response = $http->get("https://api.openweathermap.org/data/2.5/weather?$query");
+                $info = $response->json();
+                $dataByCities[] = compact('city') + $this->normalizeWeatherDetails($info);
+            }
+            $this->table(['City', 'Temperature, °C','Humidity, %', 'Pressure, mm Hg', 'Wind, m/s'],$dataByCities);
+            //$this->info("Погода в городе {$this->argument('city')} ($date):".PHP_EOL."Температура: {$json['main']['temp']} C");
             return Command::SUCCESS;
         } catch (Exception $e) {
             return Command::FAILURE;
         }
+
     }
+    private function normalizeWeatherDetails(array $weatherData): array
+    {
+        return [
+            'temperature' => (int) $weatherData['main']['temp'],
+            'humidity' => (int) $weatherData['main']['humidity'],
+            'pressure' => (int) $weatherData['main']['pressure'],
+            'wind' => round($weatherData['wind']['speed'], self::DEFAULT_PRECISION),
+        ];
+    }
+
 }
