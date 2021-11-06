@@ -87,8 +87,6 @@ class FetchWeatherForCity extends Command
         $cityWeather = new CityWeather($this->normalizeWeatherDetails($weatherData));
         $cityWeather->city_id = $city->id;
         $cityWeather->created_at = date('Y-m-d H:i:s');
-//        var_dump($cityWeather);
-//        die();
         $cityWeather->save();
     }
 
